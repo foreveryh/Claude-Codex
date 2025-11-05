@@ -189,8 +189,8 @@ pip uninstall uv
 ## 📞 获取帮助
 
 ### 社区支持
-- **GitHub Issues**: https://github.com/claude-codex/setup/issues
-- **讨论区**: https://github.com/claude-codex/setup/discussions
+- **GitHub Issues**: https://github.com/Pluviobyte/Claude-Codex/issues
+- **讨论区**: https://github.com/Pluviobyte/Claude-Codex/discussions
 
 ### 日志收集
 ```bash

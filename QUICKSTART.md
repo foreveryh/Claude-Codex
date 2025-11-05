@@ -4,7 +4,7 @@
 
 ### 第一步：运行安装命令
 ```bash
-curl -sSL https://raw.githubusercontent.com/claude-codex/setup/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Pluviobyte/Claude-Codex/main/install.sh | bash
 ```
 
 ### 第二步：选择配置类型

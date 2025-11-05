@@ -6,13 +6,13 @@
 
 ### 🎯 第一步：运行一键安装
 ```bash
-curl -sSL https://raw.githubusercontent.com/claude-codex/setup/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Pluviobyte/Claude-Codex/main/install.sh | bash
 ```
 
 或者手动下载并运行：
 ```bash
 # 下载安装脚本
-curl -O https://raw.githubusercontent.com/claude-codex/setup/main/install.sh
+curl -O https://raw.githubusercontent.com/Pluviobyte/Claude-Codex/main/install.sh
 chmod +x install.sh
 ./install.sh
 ```
