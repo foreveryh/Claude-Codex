@@ -122,36 +122,41 @@ else
     print_warning "Python3 未安装，跳过 JSON 验证"
 fi
 
-# 4. 检查 MCP 配置
-print_check "检查 MCP 配置..."
-CONFIG_DIR=$(get_claude_config_dir)
-if [ -n "$CONFIG_DIR" ]; then
-    CONFIG_FILE="$CONFIG_DIR/claude_desktop_config.json"
-    if [ -f "$CONFIG_FILE" ]; then
-        print_pass "MCP 配置文件存在"
+# 4. 检查 MCP 配置（Claude Code）
+print_check "检查 Claude Code MCP 配置..."
 
-        # 检查 codex 配置
-        if command -v jq &> /dev/null; then
-            if jq -e '.mcpServers.codex' "$CONFIG_FILE" > /dev/null 2>&1; then
-                print_pass "Codex MCP 配置存在"
-            else
-                print_warning "Codex MCP 配置缺失"
-            fi
-
-            # 检查 sequential-thinking 配置
-            if jq -e '.mcpServers["sequential-thinking"]' "$CONFIG_FILE" > /dev/null 2>&1; then
-                print_pass "Sequential-thinking MCP 配置存在"
-            else
-                print_warning "Sequential-thinking MCP 配置缺失"
-            fi
-        else
-            print_warning "jq 未安装，跳过 MCP 配置详细检查"
-        fi
-    else
-        print_fail "MCP 配置文件不存在: $CONFIG_FILE"
-    fi
+# 检查项目本地配置
+MCP_CONFIG_FOUND=false
+if [ -f ".mcp.json" ]; then
+    print_pass "项目 MCP 配置存在: .mcp.json"
+    MCP_CONFIG_FOUND=true
+    MCP_CONFIG_FILE=".mcp.json"
+elif [ -f "$HOME/.claude.json" ]; then
+    print_pass "全局 MCP 配置存在: ~/.claude.json"
+    MCP_CONFIG_FOUND=true
+    MCP_CONFIG_FILE="$HOME/.claude.json"
 else
-    print_fail "无法确定 Claude 配置目录"
+    print_warning "未找到 MCP 配置文件（.mcp.json 或 ~/.claude.json）"
+    print_warning "可以使用: claude mcp add codex --scope local"
+fi
+
+# 如果找到配置文件，检查内容
+if [ "$MCP_CONFIG_FOUND" = true ] && command -v jq &> /dev/null; then
+    # 检查 codex 配置
+    if jq -e '.mcpServers.codex' "$MCP_CONFIG_FILE" > /dev/null 2>&1; then
+        print_pass "Codex MCP 配置存在"
+    else
+        print_warning "Codex MCP 配置缺失"
+    fi
+
+    # 检查 sequential-thinking 配置（可选）
+    if jq -e '.mcpServers["sequential-thinking"]' "$MCP_CONFIG_FILE" > /dev/null 2>&1; then
+        print_pass "Sequential-thinking MCP 配置存在"
+    else
+        print_warning "Sequential-thinking MCP 配置缺失（可选）"
+    fi
+elif [ "$MCP_CONFIG_FOUND" = true ]; then
+    print_warning "jq 未安装，跳过 MCP 配置详细检查"
 fi
 
 # 5. 检查 Codex 安装
