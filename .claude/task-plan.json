@@ -1,0 +1,96 @@
+{
+  "task_marker": "20251113-153000-0001",
+  "created_at": "2025-11-13T22:18:00Z",
+  "priority_tasks": [
+    {
+      "id": "P1-fix-json-generation",
+      "priority": "CRITICAL",
+      "title": "修复 sed 删除 exa 块产生无效 JSON 的问题",
+      "description": "当用户跳过 Exa API key 时，sed '/exa/,/}/d' 会留下尾随逗号，导致生成无效的 claude_desktop_config.json",
+      "solution": "使用 jq 或 Python 来正确处理 JSON，而不是 sed",
+      "affected_lines": "install.sh:207-214",
+      "estimated_complexity": "medium",
+      "dependencies": []
+    },
+    {
+      "id": "P1-pip-uv-validation",
+      "priority": "CRITICAL",
+      "title": "验证 pip install uv 是否成功",
+      "description": "install_code_index() 假设 pip install uv 总是成功，但可能因权限或 Python 版本失败",
+      "solution": "添加错误检查，验证 uvx 命令是否可用",
+      "affected_lines": "install.sh:330-342",
+      "estimated_complexity": "low",
+      "dependencies": []
+    },
+    {
+      "id": "P1-enhanced-validation",
+      "priority": "CRITICAL",
+      "title": "增强 verify_installation() 的验证逻辑",
+      "description": "当前只检查文件是否存在，不验证 JSON 有效性或 MCP 条目",
+      "solution": "使用 Python json.tool 验证 JSON，检查必要的 MCP servers 配置",
+      "affected_lines": "install.sh:361-376",
+      "estimated_complexity": "medium",
+      "dependencies": ["P1-fix-json-generation"]
+    },
+    {
+      "id": "P2-missing-dependencies",
+      "priority": "HIGH",
+      "title": "添加缺失的依赖检查",
+      "description": "check_dependencies() 未检查 jq、curl、uvx 和 Codex，但后续脚本需要它们",
+      "solution": "扩展 check_dependencies() 函数，添加可选依赖检查并给出警告",
+      "affected_lines": "install.sh:52-93",
+      "estimated_complexity": "low",
+      "dependencies": []
+    },
+    {
+      "id": "P2-non-interactive-mode",
+      "priority": "HIGH",
+      "title": "添加非交互式模式支持",
+      "description": "支持通过命令行参数自动化安装（curl | bash 场景）",
+      "solution": "添加 --config-level, --exa-key, --non-interactive 等参数",
+      "affected_lines": "install.sh:437-476",
+      "estimated_complexity": "high",
+      "dependencies": []
+    },
+    {
+      "id": "P3-npm-global-verification",
+      "priority": "MEDIUM",
+      "title": "验证 npm 全局包是否安装成功",
+      "description": "安装后应验证 npm globals 是否真的可用",
+      "solution": "运行 npm list -g --depth=0 检查已安装的包",
+      "affected_lines": "install.sh:361-376",
+      "estimated_complexity": "low",
+      "dependencies": ["P1-enhanced-validation"]
+    },
+    {
+      "id": "P3-centralize-config",
+      "priority": "MEDIUM",
+      "title": "集中化 MCP 服务器定义",
+      "description": "配置模板和文档可能不同步，需要单一数据源",
+      "solution": "考虑使用 JSON schema 或配置生成器",
+      "affected_lines": "config-*.json",
+      "estimated_complexity": "high",
+      "dependencies": [],
+      "notes": "可能超出本次重构范围"
+    }
+  ],
+  "execution_order": [
+    "P1-fix-json-generation",
+    "P1-pip-uv-validation",
+    "P2-missing-dependencies",
+    "P1-enhanced-validation",
+    "P3-npm-global-verification",
+    "P2-non-interactive-mode"
+  ],
+  "scope_decisions": {
+    "in_scope": [
+      "修复所有 P1（CRITICAL）问题",
+      "实现 P2（HIGH）优先级改进",
+      "基础的 P3（MEDIUM）验证"
+    ],
+    "out_of_scope": [
+      "P3-centralize-config（需要重新设计配置系统）",
+      "添加自动化测试（需要单独的测试框架）"
+    ]
+  }
+}
