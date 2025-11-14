@@ -1,0 +1,55 @@
+# Task Marker 格式规范
+
+## 格式定义
+YYYYMMDD-HHMMSS-XXXX
+
+## 组成部分
+- YYYYMMDD: 8位日期（年月日）
+- HHMMSS: 6位时间（时分秒）
+- XXXX: 4位序列号（从0001开始）
+
+## 生成示例
+
+### 日期时间：2025年11月12日 14:30:25
+Task Marker: 20251112-143025-0001
+
+### 同一分钟内的多个任务
+20251112-143025-0001  # 第一个任务
+20251112-143025-0002  # 第二个任务
+20251112-143025-0003  # 第三个任务
+
+## 使用场景
+1. Codex 首次调用时在 prompt 开头
+2. 文件命名（如 task-20251112-143025-0001.json）
+3. 会话管理（codex-sessions.json）
+4. 日志记录（operations-log.md）
+
+## 代码生成示例
+
+### Bash
+```bash
+TASK_MARKER=$(date +%Y%m%d-%H%M%S)-0001
+echo $TASK_MARKER
+```
+
+### Python
+```python
+from datetime import datetime
+task_marker = datetime.now().strftime("%Y%m%d-%H%M%S") + "-0001"
+print(task_marker)
+```
+
+### JavaScript
+```javascript
+const now = new Date();
+const date = now.toISOString().slice(0,10).replace(/-/g, '');
+const time = now.toISOString().slice(11,19).replace(/:/g, '');
+const taskMarker = `${date}-${time}-0001`;
+console.log(taskMarker);
+```
+
+## 注意事项
+- ⚠️ 序列号从0001开始，不是0000
+- ⚠️ 使用连字符（-）分隔，不是下划线（_）
+- ⚠️ 日期和时间必须用零填充（如：01 而不是 1）
+- ⚠️ 同一任务的所有操作必须使用同一个 marker

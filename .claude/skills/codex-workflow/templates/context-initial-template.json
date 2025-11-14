@@ -1,0 +1,63 @@
+{
+  "scan_type": "initial",
+  "timestamp": "2025-11-12T14:30:25Z",
+  "task_marker": "20251112-143025-0001",
+  "project_location": "src/module/feature.ts 或 src/module/ 目录",
+  "current_implementation": "详细描述现有实现方式，包含关键代码片段示例",
+  "similar_cases": [
+    "src/examples/similar-feature-1.ts - 描述相似点和可参考之处",
+    "src/examples/similar-feature-2.ts - 描述相似点和可参考之处"
+  ],
+  "tech_stack": [
+    "框架名称 版本号",
+    "语言 版本号",
+    "关键依赖库 版本号",
+    "构建工具",
+    "测试框架"
+  ],
+  "testing_info": "tests/module/feature.test.ts - 描述现有测试覆盖情况和测试方式",
+  "observations": {
+    "anomalies": [
+      "发现的代码异常1：位置和具体问题描述",
+      "发现的代码异常2：潜在的性能问题或安全隐患"
+    ],
+    "info_gaps": [
+      "缺少的文档或注释：影响理解的信息不足之处",
+      "不明确的业务逻辑：需要进一步确认的地方"
+    ],
+    "suggestions": [
+      "建议1：深入调查某个模块的实现细节",
+      "建议2：考虑某种替代技术方案"
+    ],
+    "risks": [
+      "技术风险1：性能瓶颈或扩展性问题",
+      "技术风险2：安全漏洞或兼容性问题",
+      "架构风险1：与现有架构模式不一致"
+    ]
+  },
+  "additional_context": {
+    "dependencies": [
+      "上游依赖1：哪些模块依赖这个功能",
+      "下游依赖2：这个功能依赖哪些其他模块"
+    ],
+    "api_endpoints": [
+      "GET /api/endpoint1 - 描述用途",
+      "POST /api/endpoint2 - 描述用途"
+    ],
+    "database_schema": [
+      "table_name1: 相关的数据表和字段",
+      "table_name2: 关联关系说明"
+    ],
+    "configuration": [
+      "config/settings.json - 相关配置项",
+      "环境变量: ENV_VAR_NAME"
+    ]
+  },
+  "statistics": {
+    "files_scanned": 45,
+    "lines_analyzed": 3200,
+    "functions_found": 28,
+    "classes_found": 12,
+    "scan_duration_seconds": 8.5
+  }
+}
