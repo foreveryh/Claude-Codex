@@ -615,82 +615,10 @@ PYTHON_SCRIPT
     fi
 
     print_message "所有验证通过 ✓"
+    echo ""
+    print_message "配置文件已生成并会自动加载 ✓"
+    print_message "首次启动 Claude Code 时会提示批准 MCP servers"
     return 0
-}
-
-# 加载配置到 Claude Code
-load_config_to_claude() {
-    print_message "加载 MCP 配置到 Claude Code..."
-
-    local config_file=$(get_claude_config_file)
-    local failures=0
-
-    if [ ! -f "$config_file" ]; then
-        print_error "配置文件不存在: $config_file"
-        return 1
-    fi
-
-    # 使用 Python 提取并逐个添加 MCP servers
-    python3 - <<'PYTHON_SCRIPT' "$config_file"
-import json
-import sys
-import subprocess
-
-config_file = sys.argv[1]
-
-try:
-    with open(config_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    servers = data.get("mcpServers", {})
-
-    if not servers:
-        print("警告: 配置文件中未找到 MCP servers", file=sys.stderr)
-        sys.exit(1)
-
-    print("找到 {} 个 MCP servers，正在添加...".format(len(servers)))
-
-    for name, config in servers.items():
-        # 准备命令
-        cmd = ["claude", "mcp", "add", "--scope", "project", "--transport", "stdio", name]
-
-        # 添加环境变量
-        env_vars = config.get("env", {})
-        for env_key, env_value in env_vars.items():
-            cmd.extend(["--env", f"{env_key}={env_value}"])
-
-        # 添加命令和参数（使用 -- 分隔）
-        cmd.append("--")
-        cmd.append(config.get("command"))
-        cmd.extend(config.get("args", []))
-
-        # 执行命令
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✓ {name} 添加成功")
-        else:
-            print(f"✗ {name} 添加失败: {result.stderr.strip()}", file=sys.stderr)
-
-    print("MCP 配置加载完成 ✓")
-    sys.exit(0)
-
-except Exception as e:
-    print(f"加载配置失败: {e}", file=sys.stderr)
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-PYTHON_SCRIPT
-
-    if [ $? -eq 0 ]; then
-        print_success "MCP 配置加载成功 ✓"
-        echo ""
-        print_message "提示: 运行 'claude mcp list' 查看所有 MCP servers"
-        return 0
-    else
-        print_warning "MCP 配置加载失败，请手动重启 Claude Code"
-        print_warning "或者运行: claude mcp add-from-claude-desktop"
-        return 1
-    fi
 }
 
 # 显示完成信息
@@ -733,8 +661,8 @@ show_completion() {
     echo ""
     print_message "下一步操作:"
     echo "1. 在项目目录中启动 Claude Code"
-    echo "2. 运行: claude mcp list"
-    echo "3. 确认能看到已安装的 MCP 工具"
+    echo "2. 首次使用时，Claude 会提示批准 MCP servers"
+    echo "3. 选择"Allow for this project"启用所有工具"
     echo ""
     print_message "配置文件位置:"
     echo "$(pwd)/$(get_claude_config_file)"
@@ -743,7 +671,11 @@ show_completion() {
     echo "$(pwd)/$(get_claude_working_dir)/"
     echo ""
     print_message "验证安装:"
-    echo "claude mcp list    # 查看所有 MCP servers"
+    echo "- 启动 Claude Code: claude"
+    echo "- 首次使用会显示批准对话框"
+    echo "- 检查配置文件: cat $(get_claude_config_file)"
+    echo ""
+    print_warning "注意: claude mcp list 命令不显示 project scope 的 servers（已知问题 #5963）"
     echo ""
     print_message "如遇问题，请查看故障排除指南:"
     echo "https://github.com/claude-codex/setup/troubleshooting"
@@ -798,13 +730,6 @@ main() {
     if ! verify_installation "$config_level"; then
         print_error "安装验证失败，请检查配置"
         exit 1
-    fi
-
-    # 加载配置到 Claude Code（Project Scope）
-    print_message "加载配置到 Claude Code..."
-    if ! load_config_to_claude; then
-        print_warning "配置加载可能需要手动操作"
-        print_warning "请运行: claude mcp add-from-claude-desktop 或重启 Claude Code"
     fi
 
     # 显示完成信息
