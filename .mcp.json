@@ -12,7 +12,6 @@
       }
     },
     "shrimp-task-manager": {
-      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -35,7 +34,6 @@
       }
     },
     "code-index": {
-      "type": "stdio",
       "command": "uvx",
       "args": [
         "code-index-mcp"
@@ -45,15 +43,42 @@
       }
     },
     "chrome-devtools": {
-      "type": "stdio",
       "command": "npx",
       "args": [
-        "-y",
         "chrome-devtools-mcp@latest"
       ],
       "env": {
         "WORKING_DIR": ".claude"
       }
+    },
+    "exa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "exa-mcp-server"
+      ],
+      "env": {
+        "EXA_API_KEY": "7e7e0fe044-7e99-42c7-b333-27a82e1f584b",
+        "WORKING_DIR": ".claude"
+      }
+    }
+  },
+  "workflow": {
+    "execution_order": [
+      "sequential-thinking",
+      "shrimp-task-manager",
+      "codex",
+      "code-index",
+      "chrome-devtools",
+      "exa"
+    ],
+    "working_directory": ".claude",
+    "data_directories": {
+      "shrimp": ".claude/shrimp",
+      "codex": ".claude/codex",
+      "context": ".claude/context",
+      "logs": ".claude/logs",
+      "cache": ".claude/cache"
     }
   }
 }
