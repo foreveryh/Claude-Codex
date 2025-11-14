@@ -120,43 +120,21 @@ check_dependencies() {
 # 配置目录和文件管理
 # ============================================
 
-# 获取Claude配置目录
-get_claude_config_dir() {
-    local os=$(detect_os)
-    case $os in
-        "macos")
-            echo "$HOME/Library/Application Support/Claude"
-            ;;
-        "linux")
-            echo "$HOME/.config/claude"
-            ;;
-        "windows")
-            echo "$APPDATA/Claude"
-            ;;
-        *)
-            print_error "不支持的操作系统: $os"
-            exit 1
-            ;;
-    esac
+# 获取Claude Code配置文件路径（项目本地）
+get_claude_config_file() {
+    # Claude Code 使用项目本地的 .mcp.json
+    echo ".mcp.json"
 }
 
-# 创建配置目录
-create_config_dir() {
-    local config_dir=$(get_claude_config_dir)
-
-    if [ ! -d "$config_dir" ]; then
-        print_message "创建Claude配置目录: $config_dir"
-        mkdir -p "$config_dir"
-    fi
-
-    echo "$config_dir"
+# 获取Claude Code工作目录
+get_claude_working_dir() {
+    # 工作目录在项目根目录的 .claude
+    echo ".claude"
 }
 
 # 创建工作目录结构
 create_working_directories() {
-    local config_dir=$1
-    local project_dir=$(dirname "$config_dir")
-    local claude_dir="$project_dir/.claude"
+    local claude_dir=$(get_claude_working_dir)
 
     print_message "创建工作目录结构..."
 
@@ -206,18 +184,21 @@ choose_config() {
 
 # 获取Exa API密钥
 get_exa_api_key() {
-    echo ""
-    print_message "请输入你的Exa API密钥（可选）："
-    print_warning "如果还没有Exa API密钥，可以跳过此步骤"
-    echo ""
+    # 使用 >&2 将提示信息输出到 stderr，避免污染返回值
+    echo "" >&2
+    print_message "请输入你的Exa API密钥（可选）：" >&2
+    print_warning "如果还没有Exa API密钥，可以跳过此步骤" >&2
+    echo "" >&2
 
+    local exa_key
     read -s -p "Exa API Key (可选，按Enter跳过): " exa_key
-    echo ""
+    echo "" >&2
 
     if [ -z "$exa_key" ]; then
-        print_message "跳过Exa API密钥设置"
+        print_message "跳过Exa API密钥设置" >&2
     fi
 
+    # 只返回密钥本身（通过 stdout）
     echo "$exa_key"
 }
 
@@ -461,8 +442,7 @@ verify_installation() {
     local config_level=$1
     print_message "验证安装..."
 
-    local config_dir=$(get_claude_config_dir)
-    local config_file="$config_dir/claude_desktop_config.json"
+    local config_file=$(get_claude_config_file)
     local failures=0
 
     # 检查配置文件是否存在
@@ -563,7 +543,7 @@ PYTHON_SCRIPT
         if ! command_exists uvx; then
             print_error "uvx 未安装或不可用"
             ((failures++))
-        elif ! uvx code-index-mcp --version >/dev/null 2>&1; then
+        elif ! uvx code-index-mcp --help >/dev/null 2>&1; then
             print_error "code-index-mcp 无法通过 uvx 执行"
             ((failures++))
         else
@@ -628,15 +608,18 @@ show_completion() {
 
     echo ""
     print_message "下一步操作:"
-    echo "1. 重启Claude Code应用"
-    echo "2. 在Claude Code中输入: /available-tools"
-    echo "3. 确认能看到已安装的MCP工具"
+    echo "1. 在项目目录中启动 Claude Code"
+    echo "2. 运行: claude mcp list"
+    echo "3. 确认能看到已安装的 MCP 工具"
     echo ""
     print_message "配置文件位置:"
-    echo "$(get_claude_config_dir)/claude_desktop_config.json"
+    echo "$(pwd)/$(get_claude_config_file)"
     echo ""
     print_message "工作目录结构:"
-    echo "$(dirname $(get_claude_config_dir))/.claude/"
+    echo "$(pwd)/$(get_claude_working_dir)/"
+    echo ""
+    print_message "验证安装:"
+    echo "claude mcp list    # 查看所有 MCP servers"
     echo ""
     print_message "如遇问题，请查看故障排除指南:"
     echo "https://github.com/claude-codex/setup/troubleshooting"
@@ -654,8 +637,8 @@ main() {
     # 检查依赖
     check_dependencies
 
-    # 获取配置目录
-    local config_dir=$(create_config_dir)
+    # 获取配置文件路径（Claude Code 使用项目本地的 .mcp.json）
+    local config_file=$(get_claude_config_file)
 
     # 选择配置模板（使用全局变量 TEMPLATE_FILE 和 CONFIG_LEVEL）
     choose_config
@@ -673,14 +656,14 @@ main() {
     fi
 
     # 生成配置文件
-    local config_file="$config_dir/claude_desktop_config.json"
+    print_message "配置文件将写入到: $config_file"
     if ! generate_config "$template_file" "$api_key" "$config_file"; then
         print_error "配置文件生成失败，安装终止"
         exit 1
     fi
 
     # 创建工作目录结构
-    if ! create_working_directories "$config_dir"; then
+    if ! create_working_directories; then
         print_warning "工作目录创建失败，但继续安装"
     fi
 
