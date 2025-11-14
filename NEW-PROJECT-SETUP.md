@@ -27,7 +27,7 @@ Claude Code 支持 **4 个配置层级**，优先级从高到低：
 
 ### 方案优势
 - ✅ **一次配置，处处可用**：在所有项目中都可以使用
-- ✅ **无需重复安装**：不需要在每个项目中运行 install.sh
+- ✅ **无需重复安装**：不需要在每个项目中运行 install-project.sh
 - ✅ **保持独立性**：每个项目可以选择性启用或覆盖
 - ✅ **适合个人工具**：sequential-thinking、codex、code-index 等开发工具
 
@@ -174,7 +174,7 @@ claude mcp add \
 
 ```bash
 #!/bin/bash
-# setup-user-mcp.sh - 一键配置 User Scope MCP Servers
+# install-global.sh - 一键配置 User Scope MCP Servers
 
 echo "正在配置 Claude Code User Scope MCP Servers..."
 
@@ -322,18 +322,37 @@ claude mcp remove <server-name>
 
 ## 🎉 总结
 
-**推荐的最简方案**：
+**推荐的最简方案**（个人开发者）：
 
-1️⃣ **运行一次**：
+1️⃣ **全局安装（一次）**：
 ```bash
-./setup-user-mcp.sh  # 或手动执行 claude mcp add --scope user 命令
+bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install-global.sh)
 ```
 
 2️⃣ **在任何新项目中**：
 ```bash
-mkdir -p ~/Projects/NewProject/.claude
+# 选项 A：快速初始化
 cd ~/Projects/NewProject
+curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/init-workspace.sh | bash
+
+# 选项 B：手动创建
+cd ~/Projects/NewProject
+mkdir -p .claude
 claude  # 直接启动，所有 MCP 工具已可用
 ```
 
 3️⃣ **享受 Claude Code + Codex 的强大能力！** 🚀
+
+---
+
+**或者使用统一安装入口**：
+
+```bash
+# 运行交互式向导
+bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install)
+
+# 根据提示选择：
+# [1] 全局安装（推荐个人）
+# [2] 项目安装（推荐团队）
+# [3] 快速初始化（已有全局配置）
+```
