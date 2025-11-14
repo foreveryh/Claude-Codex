@@ -618,6 +618,39 @@ PYTHON_SCRIPT
     return 0
 }
 
+# 加载配置到 Claude Code
+load_config_to_claude() {
+    print_message "加载 MCP 配置到 Claude Code..."
+
+    local config_file=$(get_claude_config_file)
+
+    if [ ! -f "$config_file" ]; then
+        print_error "配置文件不存在: $config_file"
+        return 1
+    fi
+
+    # 读取配置文件内容
+    local config_content
+    config_content=$(cat "$config_file" 2>/dev/null)
+    if [ -z "$config_content" ]; then
+        print_error "无法读取配置文件内容"
+        return 1
+    fi
+
+    # 将配置添加到 Claude Code（Project Scope）
+    # 使用 add-json 命令添加完整的 MCP 配置
+    if claude mcp add-json mcp-servers --scope project "$config_content" >/dev/null 2>&1; then
+        print_success "MCP 配置加载成功 ✓"
+        echo ""
+        print_message "提示: 运行 'claude mcp list' 查看所有 MCP servers"
+        return 0
+    else
+        print_warning "MCP 配置加载失败，请手动重启 Claude Code"
+        print_warning "或者运行: claude mcp add-from-claude-desktop"
+        return 1
+    fi
+}
+
 # 显示完成信息
 show_completion() {
     local config_level=$1
@@ -723,6 +756,13 @@ main() {
     if ! verify_installation "$config_level"; then
         print_error "安装验证失败，请检查配置"
         exit 1
+    fi
+
+    # 加载配置到 Claude Code（Project Scope）
+    print_message "加载配置到 Claude Code..."
+    if ! load_config_to_claude; then
+        print_warning "配置加载可能需要手动操作"
+        print_warning "请运行: claude mcp add-from-claude-desktop 或重启 Claude Code"
     fi
 
     # 显示完成信息
