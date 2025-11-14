@@ -202,6 +202,53 @@ get_exa_api_key() {
     echo "$exa_key"
 }
 
+# ============================================
+# 配置模板下载
+# ============================================
+
+# GitHub 仓库配置模板 URL
+CONFIG_BASE_URL="https://raw.githubusercontent.com/foreveryh/Claude-Codex/main"
+
+# 下载配置文件模板
+download_template() {
+    local template_name=$1
+    local local_path=$2
+
+    if command -v curl > /dev/null 2>&1; then
+        if curl -sSL "${CONFIG_BASE_URL}/${template_name}" -o "$local_path" 2>/dev/null; then
+            return 0
+        fi
+    elif command -v wget > /dev/null 2>&1; then
+        if wget -q "${CONFIG_BASE_URL}/${template_name}" -O "$local_path" 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# 检查并获取模板文件
+get_template_file() {
+    local template_file=$1
+
+    # 如果本地文件存在，直接使用
+    if [ -f "$template_file" ]; then
+        echo "$template_file"
+        return 0
+    fi
+
+    # 如果本地文件不存在，尝试下载到临时目录
+    local temp_dir=$(mktemp -d 2>/dev/null || echo "/tmp")
+    local temp_file="$temp_dir/$template_file"
+
+    if download_template "$template_file" "$temp_file"; then
+        echo "$temp_file"
+        return 0
+    fi
+
+    return 1
+}
+
 # 生成配置文件
 generate_config() {
     local template_file=$1
@@ -210,14 +257,16 @@ generate_config() {
 
     print_message "生成配置文件: $output_file"
 
-    # 检查模板文件是否存在
-    if [ ! -f "$template_file" ]; then
-        print_error "模板文件不存在: $template_file"
+    # 获取模板文件（本地或远程）
+    local actual_template=$(get_template_file "$template_file")
+    if [ -z "$actual_template" ] || [ ! -f "$actual_template" ]; then
+        print_error "模板文件不存在且无法下载: $template_file"
+        print_error "请确保网络连接正常"
         return 1
     fi
 
     # 使用 Python 处理 JSON 配置（避免 sed 产生无效 JSON）
-    python3 - <<'PYTHON_SCRIPT' "$template_file" "$output_file" "$exa_api_key"
+    python3 - <<'PYTHON_SCRIPT' "$actual_template" "$output_file" "$exa_api_key"
 import json
 import sys
 import pathlib
