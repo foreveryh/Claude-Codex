@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Claude Code + Codex 一键安装脚本
-# 支持 macOS, Linux, Windows (Git Bash)
+# Claude Code + Codex Skill 一键安装脚本
+# 适用于 Claude Code CLI（非 Claude Desktop）
+# 在当前目录创建 Project Scope 配置
 
 set -e
 
@@ -10,38 +11,42 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# 打印带颜色的消息
-print_message() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+# 脚本所在目录（包含 Skill 源文件）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 打印函数
+print_header() {
+    echo ""
+    echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║   Claude Code + Codex Skill 安装向导   ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+    echo ""
 }
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}✗${NC} $1"
 }
 
-print_header() {
-    echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}  Claude Code + Codex 安装向导  ${NC}"
-    echo -e "${BLUE}================================${NC}"
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
 }
 
-# 检测操作系统
-detect_os() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "macos"
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        echo "linux"
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
-        echo "windows"
-    else
-        echo "unknown"
-    fi
+print_info() {
+    echo -e "${CYAN}ℹ${NC} $1"
+}
+
+print_step() {
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}▶ $1${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
 # 检查命令是否存在
@@ -49,324 +54,515 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# 检查依赖
+# 检查系统依赖
 check_dependencies() {
-    print_message "检查系统依赖..."
+    print_step "步骤 1/6: 检查系统依赖"
 
     local missing_deps=()
+    local optional_deps=()
 
+    # 必需依赖
     if ! command_exists node; then
         missing_deps+=("Node.js")
+    else
+        print_success "Node.js $(node --version)"
     fi
 
     if ! command_exists npm; then
         missing_deps+=("npm")
+    else
+        print_success "npm $(npm --version)"
     fi
 
+    # 可选依赖
     if ! command_exists python3; then
-        missing_deps+=("Python 3")
+        optional_deps+=("Python 3")
+    else
+        print_success "Python 3 $(python3 --version 2>&1 | cut -d' ' -f2)"
     fi
 
-    if ! command_exists pip; then
-        missing_deps+=("pip")
+    if ! command_exists codex; then
+        optional_deps+=("Codex")
+    else
+        print_success "Codex $(codex --version 2>&1 || echo 'installed')"
     fi
 
+    if ! command_exists jq; then
+        optional_deps+=("jq")
+    else
+        print_success "jq $(jq --version 2>&1)"
+    fi
+
+    # 错误处理
     if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_error "缺少以下依赖: ${missing_deps[*]}"
-        print_message "请先安装缺少的依赖后再运行此脚本"
         echo ""
-        print_message "安装建议:"
-        echo "  Node.js: https://nodejs.org/"
-        echo "  Python: https://www.python.org/"
+        print_error "缺少必需依赖: ${missing_deps[*]}"
+        echo ""
+        print_info "安装指南:"
+        echo "  Node.js & npm: https://nodejs.org/"
         exit 1
     fi
 
-    print_message "所有依赖检查通过 ✓"
-}
-
-# 获取Claude配置目录
-get_claude_config_dir() {
-    local os=$(detect_os)
-    case $os in
-        "macos")
-            echo "$HOME/Library/Application Support/Claude"
-            ;;
-        "linux")
-            echo "$HOME/.config/claude"
-            ;;
-        "windows")
-            echo "$APPDATA/Claude"
-            ;;
-        *)
-            print_error "不支持的操作系统: $os"
-            exit 1
-            ;;
-    esac
-}
-
-# 创建配置目录
-create_config_dir() {
-    local config_dir=$(get_claude_config_dir)
-
-    if [ ! -d "$config_dir" ]; then
-        print_message "创建Claude配置目录: $config_dir"
-        mkdir -p "$config_dir"
+    if [ ${#optional_deps[@]} -ne 0 ]; then
+        echo ""
+        print_warning "建议安装: ${optional_deps[*]}"
+        echo ""
+        read -p "是否继续安装？(y/N): " continue_install
+        if [[ ! "$continue_install" =~ ^[Yy]$ ]]; then
+            print_info "安装已取消"
+            exit 0
+        fi
     fi
 
-    echo "$config_dir"
+    echo ""
+    print_success "依赖检查完成"
 }
 
-# 选择配置模板
-choose_config() {
+# 选择配置级别
+choose_config_level() {
+    print_step "步骤 2/6: 选择配置级别"
+
     echo ""
-    print_message "请选择配置模板:"
-    echo "1) 简单配置 (推荐新手) - Claude + Codex基础协作"
-    echo "2) 标准配置 (推荐日常使用) - 完整协作开发环境"
-    echo "3) 高级配置 (推荐高级用户) - 企业级开发环境"
+    echo "请选择 MCP 配置级别："
+    echo ""
+    echo "  ${GREEN}1)${NC} 简单配置 ${YELLOW}(推荐新手)${NC}"
+    echo "     └─ sequential-thinking + codex"
+    echo ""
+    echo "  ${GREEN}2)${NC} 标准配置 ${YELLOW}(推荐日常使用)${NC}"
+    echo "     └─ sequential-thinking + shrimp + codex + code-index"
+    echo ""
+    echo "  ${GREEN}3)${NC} 高级配置 ${YELLOW}(完整功能)${NC}"
+    echo "     └─ 标准配置 + chrome-devtools + exa-search"
     echo ""
 
     while true; do
         read -p "请输入选择 (1-3): " choice
         case $choice in
             1)
-                echo "config-simple.json"
                 echo "simple"
-                break
+                return
                 ;;
             2)
-                echo "claude-desktop-config.json"
                 echo "standard"
-                break
+                return
                 ;;
             3)
-                echo "config-advanced.json"
                 echo "advanced"
-                break
+                return
                 ;;
             *)
-                print_warning "请输入有效选择 (1-3)"
+                print_warning "请输入 1、2 或 3"
                 ;;
         esac
     done
 }
 
+# 创建项目目录结构
+create_project_structure() {
+    print_step "步骤 3/6: 创建项目目录结构"
 
-# 生成配置文件
-generate_config() {
-    local template_file=$1
-    local exa_api_key=$2
-    local output_file=$3
+    local target_dir=$(pwd)
 
-    print_message "生成配置文件: $output_file"
+    print_info "目标目录: $target_dir"
+    echo ""
 
-    # 如果有Exa API密钥，则替换；否则移除相关配置
-    if [ -n "$exa_api_key" ]; then
-        sed "s/your-exa-api-key-here/$exa_api_key/g" "$template_file" > "$output_file"
-        print_message "Exa API密钥已设置 ✓"
-    else
-        # 移除Exa配置（如果存在）
-        sed '/exa/,/}/d' "$template_file" > "$output_file"
-        print_message "跳过Exa配置"
-    fi
+    # 创建 .claude 目录结构
+    local dirs=(
+        ".claude"
+        ".claude/skills"
+        ".claude/skills/codex-workflow"
+        ".claude/skills/codex-workflow/templates"
+        ".claude/context"
+        ".claude/codex"
+        ".claude/shrimp"
+        ".claude/logs"
+        ".claude/cache"
+    )
 
-    print_message "配置文件生成完成 ✓"
+    for dir in "${dirs[@]}"; do
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir"
+            print_success "创建: $dir/"
+        else
+            print_info "已存在: $dir/"
+        fi
+    done
+
+    echo ""
+    print_success "目录结构创建完成"
 }
 
-# 根据配置级别安装对应的包
-install_packages_by_config() {
+# 复制 Skill 文件
+copy_skill_files() {
+    print_step "步骤 4/6: 安装 Codex Workflow Skill"
+
+    local source_skill="$SCRIPT_DIR/.claude/skills/codex-workflow"
+    local target_skill=".claude/skills/codex-workflow"
+
+    if [ ! -d "$source_skill" ]; then
+        print_error "源 Skill 目录不存在: $source_skill"
+        exit 1
+    fi
+
+    # 复制 SKILL.md
+    if [ -f "$source_skill/SKILL.md" ]; then
+        cp "$source_skill/SKILL.md" "$target_skill/"
+        print_success "复制: SKILL.md"
+    else
+        print_error "SKILL.md 不存在"
+        exit 1
+    fi
+
+    # 复制 README.md（可选）
+    if [ -f "$source_skill/README.md" ]; then
+        cp "$source_skill/README.md" "$target_skill/"
+        print_success "复制: README.md"
+    fi
+
+    # 复制模板文件
+    if [ -d "$source_skill/templates" ]; then
+        cp -r "$source_skill/templates/"* "$target_skill/templates/"
+        local template_count=$(find "$target_skill/templates" -type f | wc -l)
+        print_success "复制: $template_count 个模板文件"
+    else
+        print_warning "模板目录不存在，跳过"
+    fi
+
+    echo ""
+    print_success "Skill 安装完成"
+}
+
+# 生成 .mcp.json 配置
+generate_mcp_config() {
     local config_level=$1
-    print_message "为 $config_level 配置安装对应的包..."
+    print_step "步骤 5/6: 生成 MCP 配置文件"
+
+    local mcp_file=".mcp.json"
+
+    print_info "配置级别: $config_level"
+    print_info "配置文件: $(pwd)/$mcp_file"
+    echo ""
 
     case $config_level in
         "simple")
-            install_basic_packages
+            cat > "$mcp_file" <<'EOF'
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["mcp-server"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    }
+  }
+}
+EOF
             ;;
         "standard")
-            install_standard_packages
+            cat > "$mcp_file" <<'EOF'
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "shrimp-task-manager": {
+      "command": "npx",
+      "args": ["-y", "mcp-shrimp-task-manager"],
+      "env": {
+        "DATA_DIR": ".claude/shrimp",
+        "TEMPLATES_USE": "zh",
+        "ENABLE_GUI": "false"
+      }
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["mcp-server"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "code-index": {
+      "command": "uvx",
+      "args": ["code-index-mcp"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    }
+  }
+}
+EOF
             ;;
         "advanced")
-            install_all_packages
-            ;;
-        *)
-            print_error "未知的配置级别: $config_level"
-            return 1
+            cat > "$mcp_file" <<'EOF'
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "shrimp-task-manager": {
+      "command": "npx",
+      "args": ["-y", "mcp-shrimp-task-manager"],
+      "env": {
+        "DATA_DIR": ".claude/shrimp",
+        "TEMPLATES_USE": "zh",
+        "ENABLE_GUI": "false"
+      }
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["mcp-server"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "code-index": {
+      "command": "uvx",
+      "args": ["code-index-mcp"],
+      "env": {
+        "WORKING_DIR": ".claude"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    },
+    "exa": {
+      "command": "npx",
+      "args": ["-y", "exa-mcp-server"],
+      "env": {
+        "EXA_API_KEY": "your-exa-api-key-here"
+      }
+    }
+  }
+}
+EOF
+            print_warning "Exa Search 需要 API Key，请编辑 .mcp.json 设置 EXA_API_KEY"
             ;;
     esac
+
+    # 验证 JSON 格式
+    if command_exists jq; then
+        if jq empty "$mcp_file" 2>/dev/null; then
+            print_success "JSON 格式验证通过"
+        else
+            print_error "JSON 格式错误"
+            exit 1
+        fi
+    else
+        print_warning "jq 未安装，跳过 JSON 验证"
+    fi
+
+    echo ""
+    print_success "MCP 配置文件已生成"
+    print_info "注意: .mcp.json 会被 Claude Code 自动加载"
+    print_info "首次使用时会要求安全批准"
 }
 
-# 安装基础包（简单配置）
-install_basic_packages() {
-    print_message "安装基础包（简单配置）..."
+# 安装 npm 包
+install_packages() {
+    local config_level=$1
+    print_step "步骤 6/6: 安装 MCP 服务器包"
 
-    local packages=(
-        "@modelcontextprotocol/server-sequential-thinking"
-    )
+    echo ""
+    print_info "正在安装全局 npm 包..."
+    echo ""
+
+    local packages=()
+
+    case $config_level in
+        "simple")
+            packages=(
+                "@modelcontextprotocol/server-sequential-thinking"
+            )
+            ;;
+        "standard")
+            packages=(
+                "@modelcontextprotocol/server-sequential-thinking"
+                "mcp-shrimp-task-manager"
+            )
+            ;;
+        "advanced")
+            packages=(
+                "@modelcontextprotocol/server-sequential-thinking"
+                "mcp-shrimp-task-manager"
+                "chrome-devtools-mcp@latest"
+                "exa-mcp-server"
+            )
+            ;;
+    esac
+
+    local installed=0
+    local failed=0
 
     for package in "${packages[@]}"; do
-        print_message "安装 $package..."
-        npm install -g "$package" || print_warning "$package 安装失败，可稍后手动安装"
+        print_info "安装: $package"
+        if npm install -g "$package" >/dev/null 2>&1; then
+            print_success "$package 安装成功"
+            ((installed++))
+        else
+            print_warning "$package 安装失败（可稍后手动安装）"
+            ((failed++))
+        fi
     done
 
-    # Codex 通常需要单独安装，检查是否可用
-    if ! command_exists codex; then
-        print_warning "Codex 未找到，请确保已正确安装 Codex"
-        print_info "Codex 安装指南：请参考官方文档"
-    else
-        print_message "Codex 已安装 ✓"
-    fi
-}
+    # 安装 Python 工具（仅标准和高级配置）
+    if [[ "$config_level" == "standard" || "$config_level" == "advanced" ]]; then
+        echo ""
+        print_info "安装 Python 工具..."
 
-# 安装标准包（标准配置）
-install_standard_packages() {
-    print_message "安装标准包（标准配置）..."
+        if command_exists pip || command_exists pip3; then
+            local pip_cmd="pip3"
+            command_exists pip && pip_cmd="pip"
 
-    local packages=(
-        "@modelcontextprotocol/server-sequential-thinking"
-        "mcp-shrimp-task-manager"
-    )
-
-    for package in "${packages[@]}"; do
-        print_message "安装 $package..."
-        npm install -g "$package" || print_warning "$package 安装失败，可稍后手动安装"
-    done
-
-    # 检查 Codex
-    if ! command_exists codex; then
-        print_warning "Codex 未找到，请确保已正确安装 Codex"
-    else
-        print_message "Codex 已安装 ✓"
+            if $pip_cmd install uv >/dev/null 2>&1; then
+                print_success "uv (uvx) 安装成功"
+                ((installed++))
+            else
+                print_warning "uv 安装失败（可稍后手动安装）"
+                ((failed++))
+            fi
+        else
+            print_warning "pip 未安装，跳过 Python 工具"
+        fi
     fi
 
-    # 安装 code-index-mcp
-    install_code_index
-}
-
-# 安装所有包（高级配置）
-install_all_packages() {
-    print_message "安装所有包（高级配置）..."
-
-    local packages=(
-        "@modelcontextprotocol/server-sequential-thinking"
-        "mcp-shrimp-task-manager"
-        "chrome-devtools-mcp@latest"
-        "exa-mcp-server"
-    )
-
-    for package in "${packages[@]}"; do
-        print_message "安装 $package..."
-        npm install -g "$package" || print_warning "$package 安装失败，可稍后手动安装"
-    done
-
-    # 检查 Codex
-    if ! command_exists codex; then
-        print_warning "Codex 未找到，请确保已正确安装 Codex"
-    else
-        print_message "Codex 已安装 ✓"
+    echo ""
+    print_success "安装完成: $installed 个成功"
+    if [ $failed -gt 0 ]; then
+        print_warning "失败: $failed 个（可稍后手动安装）"
     fi
-
-    # 安装 code-index-mcp
-    install_code_index
-}
-
-# 安装 code-index-mcp
-install_code_index() {
-    print_message "安装 code-index-mcp..."
-
-    # 检查 uvx 是否可用
-    if ! command_exists uvx; then
-        print_message "安装 uvx..."
-        pip install uv || print_warning "uvx 安装失败，可稍后手动安装"
-    fi
-
-    # 测试 code-index-mcp
-    if command_exists uvx; then
-        uvx code-index-mcp --help >/dev/null 2>&1 || print_warning "code-index-mcp 测试失败"
-    fi
-}
-
-# 安装Python包
-install_python_packages() {
-    print_message "安装必要的Python包..."
-
-    # 安装uvx (如果还没有)
-    if ! command_exists uvx; then
-        print_message "安装uvx..."
-        pip install uv || print_warning "uvx安装失败，可稍后手动安装"
-    fi
-
-    # 安装code-index-mcp
-    print_message "安装code-index-mcp..."
-    uvx code-index-mcp --help >/dev/null 2>&1 || print_warning "code-index-mcp安装失败，可稍后手动安装"
 }
 
 # 验证安装
 verify_installation() {
-    print_message "验证安装..."
+    print_step "验证安装结果"
 
-    local config_dir=$(get_claude_config_dir)
-    local config_file="$config_dir/claude_desktop_config.json"
+    echo ""
 
-    if [ -f "$config_file" ]; then
-        print_message "配置文件已正确安装 ✓"
+    # 检查目录结构
+    if [ -d ".claude/skills/codex-workflow" ]; then
+        print_success "Skill 目录已创建"
     else
-        print_error "配置文件安装失败"
+        print_error "Skill 目录缺失"
         return 1
     fi
 
-    print_message "安装验证完成 ✓"
+    # 检查 SKILL.md
+    if [ -f ".claude/skills/codex-workflow/SKILL.md" ]; then
+        print_success "SKILL.md 已安装"
+    else
+        print_error "SKILL.md 缺失"
+        return 1
+    fi
+
+    # 检查 .mcp.json
+    if [ -f ".mcp.json" ]; then
+        print_success ".mcp.json 已生成"
+    else
+        print_error ".mcp.json 缺失"
+        return 1
+    fi
+
+    # 检查 Codex
+    if command_exists codex; then
+        if codex mcp-server --help >/dev/null 2>&1; then
+            print_success "Codex MCP 服务器可用"
+        else
+            print_warning "Codex 已安装，但 MCP 服务器可能不可用"
+        fi
+    else
+        print_warning "Codex 未安装（需单独安装）"
+    fi
+
+    echo ""
+    print_success "安装验证完成"
 }
 
 # 显示完成信息
 show_completion() {
     local config_level=$1
+
     echo ""
-    print_header
-    print_message "🎉 Claude Code + Codex 安装完成！"
-    echo ""
-    print_message "安装配置级别: $config_level"
+    echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║          🎉 安装成功完成！              ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo ""
 
+    print_info "安装位置: $(pwd)"
+    print_info "配置级别: $config_level"
+    echo ""
+
+    echo -e "${CYAN}已安装的组件：${NC}"
     case $config_level in
         "simple")
-            print_message "已安装功能:"
-            echo "✓ Sequential-thinking (深度推理)"
-            echo "✓ Codex (代码分析)"
-            echo "✓ 基础协作工作流"
+            echo "  ✓ Sequential-thinking (深度推理)"
+            echo "  ✓ Codex (代码分析)"
+            echo "  ✓ Codex Workflow Skill"
             ;;
         "standard")
-            print_message "已安装功能:"
-            echo "✓ Sequential-thinking (深度推理)"
-            echo "✓ Shrimp Task Manager (任务管理)"
-            echo "✓ Codex (代码分析)"
-            echo "✓ Code Index (代码索引)"
-            echo "✓ 标准协作工作流"
+            echo "  ✓ Sequential-thinking (深度推理)"
+            echo "  ✓ Shrimp Task Manager (任务管理)"
+            echo "  ✓ Codex (代码分析)"
+            echo "  ✓ Code Index (代码索引)"
+            echo "  ✓ Codex Workflow Skill"
             ;;
         "advanced")
-            print_message "已安装功能:"
-            echo "✓ Sequential-thinking (深度推理)"
-            echo "✓ Shrimp Task Manager (任务管理)"
-            echo "✓ Codex (代码分析)"
-            echo "✓ Code Index (代码索引)"
-            echo "✓ Chrome DevTools (浏览器调试)"
-            echo "✓ Exa Search (网络搜索)"
-            echo "✓ 完整协作工作流"
+            echo "  ✓ Sequential-thinking (深度推理)"
+            echo "  ✓ Shrimp Task Manager (任务管理)"
+            echo "  ✓ Codex (代码分析)"
+            echo "  ✓ Code Index (代码索引)"
+            echo "  ✓ Chrome DevTools (浏览器调试)"
+            echo "  ✓ Exa Search (网络搜索)"
+            echo "  ✓ Codex Workflow Skill"
             ;;
     esac
 
     echo ""
-    print_message "下一步操作:"
-    echo "1. 重启Claude Code应用"
-    echo "2. 在Claude Code中输入: /available-tools"
-    echo "3. 确认能看到已安装的MCP工具"
+    echo -e "${CYAN}下一步操作：${NC}"
+    echo "  1. 在此目录启动 Claude Code CLI"
+    echo "  2. .mcp.json 会被自动加载（首次需批准）"
+    echo "  3. Skill 会在合适时机自动触发"
     echo ""
-    print_message "配置文件位置:"
-    echo "$(get_claude_config_dir)/claude_desktop_config.json"
+
+    echo -e "${CYAN}测试 Skill：${NC}"
+    echo "  在对话中说："帮我重构 install.sh 脚本""
+    echo "  或："分析这个项目的架构""
     echo ""
-    print_message "工作目录结构:"
-    echo "$(dirname $(get_claude_config_dir))/.claude/"
+
+    echo -e "${CYAN}检查配置健康状态：${NC}"
+    echo "  ./check-skill-health.sh"
     echo ""
-    print_message "如遇问题，请查看故障排除指南:"
-    echo "https://github.com/claude-codex/setup/troubleshooting"
+
+    echo -e "${YELLOW}注意事项：${NC}"
+    echo "  • claude mcp list 不显示 project scope 的 servers（已知 BUG #5963）"
+    echo "  • 这不影响实际使用，servers 已正常加载"
+    echo "  • 如需重置批准选择：claude mcp reset-project-choices"
+    echo ""
+
+    if [[ "$config_level" == "advanced" ]]; then
+        echo -e "${YELLOW}高级配置提醒：${NC}"
+        echo "  • Exa API Key 需手动设置：编辑 .mcp.json"
+        echo "  • 获取 API Key: https://exa.ai/"
+        echo ""
+    fi
+
+    print_success "安装完成！开始使用 Claude Code + Codex Workflow 吧！"
     echo ""
 }
 
@@ -374,73 +570,29 @@ show_completion() {
 main() {
     print_header
 
-    # 检查依赖
+    # 步骤 1: 检查依赖
     check_dependencies
 
-    # 获取配置目录
-    local config_dir=$(create_config_dir)
+    # 步骤 2: 选择配置级别
+    local config_level=$(choose_config_level)
 
-    # 选择配置模板（返回文件名和配置级别）
-    local config_choice=$(choose_config)
-    local template_file=$(echo "$config_choice" | head -n1)
-    local config_level=$(echo "$config_choice" | tail -n1)
+    # 步骤 3: 创建目录结构
+    create_project_structure
 
-    # 检查是否需要API密钥（仅高级配置需要）
-    local api_key=""
-    if [ "$config_level" = "advanced" ]; then
-        print_message "高级配置需要Exa API密钥（可选）"
-        read -p "是否要设置Exa API密钥？(y/N): " setup_exa
-        if [[ "$setup_exa" =~ ^[Yy]$ ]]; then
-            api_key=$(get_exa_api_key)
-        fi
-    fi
+    # 步骤 4: 复制 Skill 文件
+    copy_skill_files
 
-    # 生成配置文件
-    local config_file="$config_dir/claude_desktop_config.json"
-    generate_config "$template_file" "$api_key" "$config_file"
+    # 步骤 5: 生成 MCP 配置
+    generate_mcp_config "$config_level"
 
-    # 创建工作目录结构
-    create_working_directories "$config_dir"
-
-    # 根据配置级别安装对应的包
-    install_packages_by_config "$config_level"
+    # 步骤 6: 安装包
+    install_packages "$config_level"
 
     # 验证安装
     verify_installation
 
     # 显示完成信息
     show_completion "$config_level"
-}
-
-# 创建工作目录结构
-create_working_directories() {
-    local config_dir=$1
-    local project_dir=$(dirname "$config_dir")
-    local claude_dir="$project_dir/.claude"
-
-    print_message "创建工作目录结构..."
-
-    # 创建 .claude 目录结构
-    mkdir -p "$claude_dir"/{shrimp,codex,context,logs,cache}
-
-    print_message "工作目录结构创建完成 ✓"
-}
-
-# 获取Exa API密钥
-get_exa_api_key() {
-    echo ""
-    print_message "请输入你的Exa API密钥（可选）："
-    print_warning "如果还没有Exa API密钥，可以跳过此步骤"
-    echo ""
-
-    read -s -p "Exa API Key (可选，按Enter跳过): " exa_key
-    echo ""
-
-    if [ -z "$exa_key" ]; then
-        print_message "跳过Exa API密钥设置"
-    fi
-
-    echo "$exa_key"
 }
 
 # 运行主函数
