@@ -9,6 +9,23 @@ set -e
 # 工具函数
 # ============================================
 
+# 当前脚本所在目录（用于检测本地资源是否可用）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || pwd)"
+
+# 技能目录路径
+SKILL_RELATIVE_PATH=".claude/skills/codex-workflow"
+
+# Skill 所需文件列表
+SKILL_FILE_LIST=(
+    "README.md"
+    "SKILL.md"
+    "templates/review-checklist.md"
+    "templates/context-initial-template.json"
+    "templates/codex-prompt-template.md"
+    "templates/task-marker-format.txt"
+    "templates/skill-troubleshooting.md"
+)
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -139,7 +156,8 @@ create_working_directories() {
     print_message "创建工作目录结构..."
 
     # 创建 .claude 目录结构
-    if mkdir -p "$claude_dir"/{shrimp,codex,context,logs,cache}; then
+    if mkdir -p "$claude_dir"/{shrimp,codex,context,logs,cache,skills}; then
+        mkdir -p "$claude_dir/skills/codex-workflow/templates"
         print_message "工作目录结构创建完成 ✓"
         return 0
     else
@@ -209,22 +227,35 @@ get_exa_api_key() {
 # GitHub 仓库配置模板 URL
 CONFIG_BASE_URL="https://raw.githubusercontent.com/foreveryh/Claude-Codex/main"
 
-# 下载配置文件模板
-download_template() {
-    local template_name=$1
+# 通用的文件下载函数（优先使用 curl，其次 wget）
+download_repo_file() {
+    local relative_path=$1
     local local_path=$2
+    local url="${CONFIG_BASE_URL}/${relative_path}"
+
+    mkdir -p "$(dirname "$local_path")"
 
     if command -v curl > /dev/null 2>&1; then
-        if curl -sSL "${CONFIG_BASE_URL}/${template_name}" -o "$local_path" 2>/dev/null; then
+        if curl -fsSL "$url" -o "$local_path" 2>/dev/null; then
             return 0
         fi
-    elif command -v wget > /dev/null 2>&1; then
-        if wget -q "${CONFIG_BASE_URL}/${template_name}" -O "$local_path" 2>/dev/null; then
+    fi
+
+    if command -v wget > /dev/null 2>&1; then
+        if wget -q "$url" -O "$local_path" 2>/dev/null; then
             return 0
         fi
     fi
 
     return 1
+}
+
+# 下载配置文件模板
+download_template() {
+    local template_name=$1
+    local local_path=$2
+
+    download_repo_file "$template_name" "$local_path"
 }
 
 # 检查并获取模板文件
@@ -247,6 +278,38 @@ get_template_file() {
     fi
 
     return 1
+}
+
+# 安装（或下载）Codex Workflow Skill
+install_skill_files() {
+    print_message "安装 Codex Workflow Skill..."
+
+    local target_dir=".claude/skills/codex-workflow"
+    local local_skill_dir="$SCRIPT_DIR/$SKILL_RELATIVE_PATH"
+
+    mkdir -p "$target_dir"
+
+    if [ -d "$local_skill_dir" ]; then
+        rm -rf "$target_dir"
+        mkdir -p "$target_dir"
+        if cp -R "$local_skill_dir"/. "$target_dir"/ 2>/dev/null; then
+            print_message "已从本地仓库复制 Skill 文件 ✓"
+            return 0
+        else
+            print_warning "本地 Skill 复制失败，尝试从远程下载"
+        fi
+    fi
+
+    for file in "${SKILL_FILE_LIST[@]}"; do
+        local destination="$target_dir/$file"
+        if ! download_repo_file "$SKILL_RELATIVE_PATH/$file" "$destination"; then
+            print_error "无法下载 Skill 文件: $file"
+            return 1
+        fi
+    done
+
+    print_message "Skill 文件下载完成 ✓"
+    return 0
 }
 
 # 生成配置文件
@@ -508,6 +571,15 @@ verify_installation() {
         print_message "JSON 语法验证通过 ✓"
     fi
 
+    # 验证 Skill 文件是否存在
+    local skill_dir=".claude/skills/codex-workflow"
+    if [ -f "$skill_dir/SKILL.md" ] && [ -d "$skill_dir/templates" ]; then
+        print_message "Codex Workflow Skill 文件就绪 ✓"
+    else
+        print_error "未找到 Codex Workflow Skill，请重新运行脚本"
+        ((failures++))
+    fi
+
     # 获取已配置的 MCP servers
     local configured_servers
     configured_servers=$(python3 - <<'PYTHON_SCRIPT' "$config_file" 2>/dev/null
@@ -721,6 +793,12 @@ main() {
     # 创建工作目录结构
     if ! create_working_directories; then
         print_warning "工作目录创建失败，但继续安装"
+    fi
+
+    # 安装 Codex Workflow Skill
+    if ! install_skill_files; then
+        print_error "Skill 安装失败，安装流程终止"
+        exit 1
     fi
 
     # 根据配置级别安装对应的包

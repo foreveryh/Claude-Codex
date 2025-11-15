@@ -9,9 +9,18 @@
 
 ## 📋 快速开始
 
+### ✅ 环境要求
+
+在执行任意安装脚本前请确认：
+
+- 已安装 **Node.js**（附带 npm）
+- 已安装 **Python 3** 与 **pip**
+- 推荐安装 **curl**（脚本也会在存在 wget 时自动回退）
+- （可选）已安装 **codex** CLI，脚本会检测缺失并给出提示
+
 ### 🎯 方式 1：交互式安装（推荐新手 ⭐）
 
-一条命令，自动引导选择：
+一条命令，自动引导选择。脚本会在需要时自动下载 Codex Workflow Skill 文件，因此即使直接通过 `curl` 运行也能获得完整配置：
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install)
@@ -79,7 +88,7 @@ curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/init-wor
 
 ```bash
 # 1. 全局安装（一次）
-bash <(curl -sSL https://raw.githubusercontent.com/.../install-global.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install-global.sh)
 
 # 2. 在任何新项目中使用
 cd ~/Projects/my-project
@@ -92,7 +101,7 @@ claude  # 直接使用，无需配置
 ```bash
 # 1. 项目安装（生成 .mcp.json）
 cd team-project
-bash <(curl -sSL https://raw.githubusercontent.com/.../install-project.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install-project.sh)
 
 # 2. 提交到版本控制
 git add .mcp.json
@@ -153,6 +162,21 @@ Claude: 这是一个复杂的多模块任务。
 ```
 
 ---
+
+## 🔍 安装后验证
+
+不论选择哪种安装方式，建议执行以下命令确认环境就绪：
+
+```bash
+./check-skill-health.sh
+```
+
+脚本会检查：
+- `.mcp.json` 是否存在且语法正确
+- Codex Workflow Skill 及其模板是否已安装
+- 必要的 npm/pip 包是否可用
+
+如发现缺失组件，它会给出修复步骤（重新运行相应安装脚本或补装依赖）。
 
 ## 🔍 故障排除
 
