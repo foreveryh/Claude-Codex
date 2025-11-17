@@ -9,9 +9,24 @@
 
 ## 📋 快速开始
 
-### 一键安装（推荐 ⭐）
+### 🎯 方式 1：远程一键安装（推荐 ⭐）
 
-在项目目录运行：
+无需克隆仓库，一条命令完成：
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install)
+```
+
+**工作原理**：
+- 自动下载安装脚本和 Skill 文件到临时目录
+- 在当前项目目录创建 `.claude/` 和 `.mcp.json`
+- 安装完成后自动清理临时文件
+
+---
+
+### 📦 方式 2：本地安装
+
+如果你已经克隆了仓库：
 
 ```bash
 # 克隆仓库
@@ -19,6 +34,8 @@ git clone https://github.com/foreveryh/Claude-Codex.git
 cd Claude-Codex
 
 # 运行安装脚本
+./install
+# 或
 ./install.sh
 ```
 
@@ -29,20 +46,6 @@ cd Claude-Codex
 4. **安装 Skill** - 复制 Skill 文件和模板
 5. **生成配置** - 创建 .mcp.json
 6. **安装包** - npm 全局包和 Python 工具
-
----
-
-### 快速初始化（已有项目 ⚡）
-
-如果只需要在现有项目中创建工作目录：
-
-```bash
-# 进入项目目录
-cd your-project
-
-# 创建工作目录结构
-mkdir -p .claude/{skills,context,codex,shrimp,logs,cache}
-```
 
 ---
 
