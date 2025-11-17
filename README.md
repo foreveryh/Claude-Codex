@@ -9,54 +9,39 @@
 
 ## 📋 快速开始
 
-### 🎯 方式 1：交互式安装（推荐新手 ⭐）
+### 一键安装（推荐 ⭐）
 
-一条命令，自动引导选择：
+在项目目录运行：
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install)
+# 克隆仓库
+git clone https://github.com/foreveryh/Claude-Codex.git
+cd Claude-Codex
+
+# 运行安装脚本
+./install.sh
 ```
 
-脚本会引导你选择：
-- **[1] 全局安装** - 配置一次，所有项目可用（推荐个人使用）
-- **[2] 项目安装** - 配置可版本控制（推荐团队协作）
-- **[3] 快速初始化** - 仅创建工作目录（需已有全局配置）
+**安装过程**：
+1. **检查依赖** - Node.js, npm 等
+2. **选择配置** - 简单/标准/高级
+3. **创建目录** - .claude/skills/codex-workflow
+4. **安装 Skill** - 复制 Skill 文件和模板
+5. **生成配置** - 创建 .mcp.json
+6. **安装包** - npm 全局包和 Python 工具
 
 ---
 
-### ⚡ 方式 2：直接安装（老手专用）
+### 快速初始化（已有项目 ⚡）
 
-#### 个人开发者 - 全局安装
-
-```bash
-# 配置一次，处处可用
-curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install-global.sh | bash
-```
-
-**使用场景**：
-- ✅ 个人项目，多个项目需要相同工具
-- ✅ 无需在每个项目中重复配置
-- ✅ 配置由 Claude Code 内部管理
-
-#### 团队协作 - 项目安装
+如果只需要在现有项目中创建工作目录：
 
 ```bash
-# 在项目根目录运行
+# 进入项目目录
 cd your-project
-curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/install-project.sh | bash
-```
 
-**使用场景**：
-- ✅ 团队项目，需要统一工具链
-- ✅ 配置可见（.mcp.json），可版本控制
-- ✅ 团队成员 pull 后自动生效
-
-#### 快速初始化 - 已有全局配置
-
-```bash
-# 仅创建工作目录，1 秒完成
-cd new-project
-curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/init-workspace.sh | bash
+# 创建工作目录结构
+mkdir -p .claude/{skills,context,codex,shrimp,logs,cache}
 ```
 
 ---
@@ -73,35 +58,34 @@ curl -sSL https://raw.githubusercontent.com/foreveryh/Claude-Codex/main/init-wor
 
 ---
 
-## 💡 使用场景对比
+## 💡 使用场景
 
-### 🏠 个人开发者
+### 🏠 个人项目
 
 ```bash
-# 1. 全局安装（一次）
-bash <(curl -sSL https://raw.githubusercontent.com/.../install-global.sh)
-
-# 2. 在任何新项目中使用
+# 1. 在项目中安装
 cd ~/Projects/my-project
-mkdir -p .claude
-claude  # 直接使用，无需配置
+/path/to/Claude-Codex/install.sh
+
+# 2. 使用 Claude Code
+claude  # 自动加载 .mcp.json 配置
 ```
 
 ### 👥 团队协作
 
 ```bash
-# 1. 项目安装（生成 .mcp.json）
+# 1. 在团队项目中安装
 cd team-project
-bash <(curl -sSL https://raw.githubusercontent.com/.../install-project.sh)
+/path/to/Claude-Codex/install.sh
 
 # 2. 提交到版本控制
-git add .mcp.json
+git add .mcp.json .claude/
 git commit -m "feat: 添加 Claude-Codex 配置"
 git push
 
-# 3. 团队成员 pull 后自动生效
+# 3. 团队成员自动生效
 git pull
-claude  # 自动加载团队配置
+claude  # 自动加载团队配置（首次需批准）
 ```
 
 ---
