@@ -120,23 +120,23 @@ check_dependencies() {
 
 # 选择配置级别
 choose_config_level() {
-    print_step "步骤 2/6: 选择配置级别"
+    print_step "步骤 2/6: 选择配置级别" >&2
 
-    echo ""
-    echo "请选择 MCP 配置级别："
-    echo ""
-    echo "  ${GREEN}1)${NC} 简单配置 ${YELLOW}(推荐新手)${NC}"
-    echo "     └─ sequential-thinking + codex"
-    echo ""
-    echo "  ${GREEN}2)${NC} 标准配置 ${YELLOW}(推荐日常使用)${NC}"
-    echo "     └─ sequential-thinking + shrimp + codex + code-index"
-    echo ""
-    echo "  ${GREEN}3)${NC} 高级配置 ${YELLOW}(完整功能)${NC}"
-    echo "     └─ 标准配置 + chrome-devtools + exa-search"
-    echo ""
+    echo "" >&2
+    echo "请选择 MCP 配置级别：" >&2
+    echo "" >&2
+    echo "  ${GREEN}1)${NC} 简单配置 ${YELLOW}(推荐新手)${NC}" >&2
+    echo "     └─ sequential-thinking + codex" >&2
+    echo "" >&2
+    echo "  ${GREEN}2)${NC} 标准配置 ${YELLOW}(推荐日常使用)${NC}" >&2
+    echo "     └─ sequential-thinking + shrimp + codex + code-index" >&2
+    echo "" >&2
+    echo "  ${GREEN}3)${NC} 高级配置 ${YELLOW}(完整功能)${NC}" >&2
+    echo "     └─ 标准配置 + chrome-devtools + exa-search" >&2
+    echo "" >&2
 
     while true; do
-        read -p "请输入选择 (1-3): " choice
+        read -p "请输入选择 (1-3): " choice >&2
         case $choice in
             1)
                 echo "simple"
@@ -151,7 +151,7 @@ choose_config_level() {
                 return
                 ;;
             *)
-                print_warning "请输入 1、2 或 3"
+                print_warning "请输入 1、2 或 3" >&2
                 ;;
         esac
     done
