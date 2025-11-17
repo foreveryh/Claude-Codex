@@ -248,16 +248,15 @@ elif [ $WARNINGS -gt 0 ]; then
     echo "可选优化："
     echo "1. 安装 Codex: 参考 https://github.com/openai/codex"
     echo "2. 安装缺失的工具: jq, python3 等"
-    echo "3. 完善 MCP 配置: 参考 config-advanced.json"
+    echo "3. 完善 MCP 配置: 编辑 .mcp.json 添加更多 servers"
     exit 0
 else
     echo -e "${GREEN}所有检查通过！✅${NC}"
     echo ""
     echo "下一步："
-    echo "1. 如果使用项目本地 Skill，无需其他操作"
-    echo "2. 如果要全局使用，复制到 Claude 配置目录："
-    echo "   cp -r .claude/skills/codex-workflow $CONFIG_DIR/skills/"
-    echo "3. 重启 Claude Code 应用"
-    echo "4. 测试 Skill: 在对话中尝试 '帮我重构这段代码'"
+    echo "1. 在此目录启动 Claude Code CLI"
+    echo "2. .mcp.json 会被自动加载"
+    echo "3. Skill 会在合适时机自动触发"
+    echo "4. 测试命令: '帮我重构这段代码' 或 '分析项目架构'"
     exit 0
 fi
