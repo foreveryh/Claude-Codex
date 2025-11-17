@@ -173,16 +173,20 @@ A: 运行 `claude mcp list`
 **Q: 如何删除某个 MCP server？**
 A: 运行 `claude mcp remove <server-name>`
 
-详细故障排除指南请查看：[troubleshooting.md](troubleshooting.md)
+详细故障排除指南请查看：[troubleshooting.md](docs/troubleshooting.md)
 
 ---
 
 ## 📖 更多文档
 
-- **[使用指南](USAGE-GUIDE.md)** - 详细的场景对比和最佳实践
-- **[新项目设置](NEW-PROJECT-SETUP.md)** - 技术细节和配置说明
-- **[故障排除](troubleshooting.md)** - 常见问题解决方案
-- **[安装修复说明](INSTALL-FIX-NOTES.md)** - 最新修复记录
+- **[快速开始](docs/QUICKSTART.md)** - 5 分钟快速上手
+- **[使用指南](docs/USAGE-GUIDE.md)** - 详细的场景对比和最佳实践
+- **[新项目设置](docs/NEW-PROJECT-SETUP.md)** - 技术细节和配置说明
+- **[Skill 指南](docs/SKILL-GUIDE.md)** - Codex Workflow Skill 完整说明
+- **[配置说明](docs/README-config.md)** - MCP 配置文件详解
+- **[故障排除](docs/troubleshooting.md)** - 常见问题解决方案
+- **[高级指南](docs/advanced.md)** - 高级功能和最佳实践
+- **[API 文档](docs/api.md)** - API 参考文档
 
 ---
 
@@ -202,7 +206,7 @@ claude mcp add --scope project --transport stdio codex \
   -- codex mcp-server
 ```
 
-更多配置选项请查看：[配置文件说明](README-config.md)
+更多配置选项请查看：[配置文件说明](docs/README-config.md)
 
 ---
 
@@ -232,4 +236,4 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 **开始你的 AI 协作开发之旅吧！** 🚀
 
-有问题？查看 [USAGE-GUIDE.md](USAGE-GUIDE.md) 或提交 [Issue](https://github.com/foreveryh/Claude-Codex/issues)
+有问题？查看 [docs/USAGE-GUIDE.md](docs/USAGE-GUIDE.md) 或提交 [Issue](https://github.com/foreveryh/Claude-Codex/issues)
